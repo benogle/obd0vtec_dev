@@ -1,5 +1,5 @@
 Author(s): Ben Ogle
-Contributors: Mr X, Nico, Malte, Anton
+Contributors: Mr X, Nico, Malte, Anton, Ximon, Tinker_Tim
 
 - As of 9-03-06 this document does not exist for any other code base. I chose 
   the JDM Pw0 code because it is the cleanest of all the Obd0 VTEC code bases.
@@ -11,7 +11,7 @@ Contributors: Mr X, Nico, Malte, Anton
 [JDM PW0 RAM]
 
 RAM 98h = ADCR0H = WaterCoolantTemp
-RAM 99h = ADCR1H = AirIntakeTemp (off 126h.5 is set if ADCR1 > 80h)
+RAM 99h = ADCR0H = AirIntakeTemp
 RAM A1h = ADCR2H = LambdaSensor 1
 RAM A2h = ADCR3H = LambdaSensor 2
 RAM A8h = ADCR4 = PA sensor
@@ -20,16 +20,9 @@ RAM A5h = ADCR6H = Alternator
 RAM AAh = ADCR7 = TPS
 
 [NOTE]
- ADCR1 is mapped to the B17 on the ec connector (window de-mister)
- ADCR0 is connected to IC6, analog multiplexer
+ ADCR1 is mapped to B17 on the ECU connector (window de-mister)
+ ADCR0 is connected to IC6, analog multiplexer; IAT and ECT are MUX'd via IC6
 
-     ;PR3:
-     ; $98=ADCR1H=air temp               
-     ; $99=VOIE 0H=water temp       	  	      $9D=VOIE 4H=ground
-     ; $9A=VOIE 1H= idle adjust conn.(B20) 	      $9E=VOIE 5H=auto jumper (grounded)
-     ; $9B=VOIE 2H= 12V		       		      $9F=VOIE 6H=CONNECTEUR B9  = Brake switch
-     ; $9C=VOIE 3H= 5V        		      	      $A0=VOIE 7H=CONNECTEUR B18 ??
-     
 98 WaterCoolantTempSensor
 99 IntakeAirTempSensor
 9A Battery Voltage (12V)
@@ -191,6 +184,8 @@ FF Inputs. Read from external chip @ 18fch in JDM PW0 See [Bit] section
 16bh -high byte 
 16ch another ect? fuel trim
 16dh -high byte 
+
+16fh some selector for open/closed loop
 
 172h target idle rev count (same format as bah/bbh) 
 173h target idle high byte
@@ -366,6 +361,9 @@ FF.7 = Starter signal
 11fh.6 = middle
 11fh.7 = oldest
 
+120h.5 = set if a6h > #c9h. 
+120h.6 = set if a6h > #8h. So if the car is running.
+
 121h.1 = 1 when e3h != 4 in TDC checking routine
 121h.2 = 1 if ecu sees the CKP cel bit for >=6 iterations
 121h.3 = 1 when something is bad with ignition. 0 when all is good and ignition is ready to go
@@ -380,7 +378,7 @@ FF.7 = Starter signal
 125h.1 = idle related
 125h.2 = 1 when [bah/bbh]<[172h/173h] (1 when revs are under target idle)
 
-126h.5 = 1 if IAT > #80h
+126h.5 = 1 if rear window de-mister is ON
 
 0129h.0
 0129h.1

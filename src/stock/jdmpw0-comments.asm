@@ -499,8 +499,8 @@ label_025c:     CLR     A                      ; A = 0
                 ;e5h==2 -> cyl 4 or 1
 
                 ;Secondary o2: X1 = 2
-				;if the secondary o2 is on cyl 2 and 3, then that means:
-				;e5h==1 -> cyl 3 or 2
+                ;if the secondary o2 is on cyl 2 and 3, then that means:
+                ;e5h==1 -> cyl 3 or 2
                 ;e5h==3 -> cyl 2 or 3
                 ;e5h must follow the firing order...
 
@@ -510,11 +510,13 @@ label_025c:     CLR     A                      ; A = 0
                 JNE     label_0271             ; if != 0 jump
                 L       A, #08000h             ; if == 0 then no correction
                 ST      A, er0                 ;
+                
                                                ; 0271 from 026B (DD1,???,???)
 label_0271:     SRL     X1                     ; X1 can be 0 or 1
                 LB      A, 0011bh[X1]          ; load 11bh or 11ch
                 SRLB    A                      ; shift right
-                ;if [11bh pr 11ch].0 = 0 then jump
+                
+                ;if [11bh or 11ch].0 = 0 then jump
                 ;these were set to 0 in an error part of the code
                 JGE     label_0280             ; if no carry from shifting jump
 
@@ -522,14 +524,16 @@ label_0271:     SRL     X1                     ; X1 can be 0 or 1
                 CLR     A                      ; else A = 0
                 LC      A, 03789h[DP]          ; and we load this which will be 0.
                 ADD     er0, A                 ; then add it to the o2 sensors
+                
                                                ; 0280 from 0277 (DD0,???,???)
-label_0280:     L       A, off(0144h)          ; A = [144h]
+label_0280:     L       A, off(0144h)          ; load final fuel value from map
                 MUL                            ; er1A = A*er0 = [144h]*[162h or 164h]
                 SLL     A                      ; shift left to get the most sig bit
                 L       A, er1                 ; A = [144h]*[162h or 164h]/10000h
                 ROL     A                      ; [144h]*[162h or 164h]/10000h *2 + carry from MSBit of low word
                 JLT     label_028d             ; if theres a carry, then shit shit!
                 ADD     A, off(0146h)          ; else  A = [144h]*[162h or 164h]/10000h *2 + [146h]
+                                               ; basically: A = table_value * o2_correction/10000h * 2 + fuel_trims
                 JGE     label_0290             ; if good, store it in d6h
 
                 ; 028D from 0287 bad: overflow
@@ -2367,13 +2371,15 @@ label_0a99:     LB      A, r7                  ; 0A99 0 108 13D 7F
                 LB      A, #008h               ; 0ADE 0 108 13D 7708
                                                ; 0AE0 from 0ADB (DD0,108,13D)
 label_0ae0:     CMPB    A, 0a6h                ; 0AE0 0 108 13D C5A6C2
-                MB      off(00120h).6, C       ; 0AE3 0 108 13D C4203E
+                MB      off(00120h).6, C       ; set if running...
+                
                 LB      A, #0c5h               ; 0AE6 0 108 13D 77C5
                 JBS     off(00120h).5, label_0aed ; 0AE8 0 108 13D ED2002
                 LB      A, #0c9h               ; 0AEB 0 108 13D 77C9
                                                ; 0AED from 0AE8 (DD0,108,13D)
 label_0aed:     CMPB    A, 0a6h                ; 0AED 0 108 13D C5A6C2
-                MB      off(00120h).5, C       ; 0AF0 0 108 13D C4203D
+                MB      off(00120h).5, C       ; set if rpm over ~5k?
+                
                 MOVB    r0, #020h              ; 0AF3 0 108 13D 9820
                 JBS     off(00129h).3, label_0afa ; vtec vss check bit
                 MOVB    r0, #028h              ; 0AF8 0 108 13D 9828
@@ -2942,27 +2948,40 @@ label_0dc2:     STB     A, off(0015bh)         ; 0DC2 0 108 13D D45B
 ;*******************************************************************
 ;start o2 stuff...
 
-                CLRB    r7                     ; 0DC4 0 108 13D 2715
-                LB      A, off(0016fh)         ; 0DC6 0 108 13D F46F
-                JNE     label_0df0             ; 0DC8 0 108 13D CE26
+                CLRB    r7                     ; r7 = 0
+                
+                ;this may be error checking. if r7 == 0, then error?
+                LB      A, off(0016fh)         ; ?
+                JNE     label_0df0             ; 
                 JBS     off(00122h).0, label_0df0 ; 0DCA 0 108 13D E82223
-                JBR     off(00120h).6, label_0df0 ; 0DCD 0 108 13D DE2020
-                MB      C, 0feh.6              ; 0DD0 0 108 13D C5FE2E
-                JLT     label_0df0             ; 0DD3 0 108 13D CA1B
-                INCB    r7                     ; 0DD5 0 108 13D AF
-                JBR     off(00120h).5, label_0df0 ; 0DD6 0 108 13D DD2017
+                JBR     off(00120h).6, label_0df0 ; if the car is not running, jump
+                MB      C, 0feh.6              ; load bad ignition bit
+                JLT     label_0df0             ; if ignition problems, jump
+                
+                
+                INCB    r7                     ; r7 = 1
+                
+                JBR     off(00120h).5, label_0df0 ; jump with r7 == 1; this bit is set if RPM is over ~5k
+                
+                ;could be the values for the switch FROM open -> closed loop.
                 LB      A, #0e9h               ; 0DD9 0 108 13D 77E9
                 MOVB    r0, #055h              ; 0DDB 0 108 13D 9855
-                JBR     off(0011dh).0, label_0de4 ; 0DDD 0 108 13D D81D04
+                
+                JBR     off(0011dh).0, label_0de4 ; if bit == 0, jump
+                
+                ;could vals for the switch TO open loop?
                 LB      A, #0ech               ; 0DE0 0 108 13D 77EC
                 MOVB    r0, #064h              ; 0DE2 0 108 13D 9864
+                
+                
                                                ; 0DE4 from 0DDD (DD0,108,13D)
-label_0de4:     CMPB    A, 0a6h                ; 0DE4 0 108 13D C5A6C2
-                JLT     label_0df0             ; 0DE7 0 108 13D CA07
-                LB      A, r0                  ; 0DE9 0 108 13D 78
-                CMPB    A, 0b4h                ; 0DEA 0 108 13D C5B4C2
-                JLT     label_0df0             ; 0DED 0 108 13D CA01
-                INCB    r7                     ; 0DEF 0 108 13D AF
+label_0de4:     CMPB    A, 0a6h                ; 
+                JLT     label_0df0             ; if RPM over ~6k, jump
+                LB      A, r0                  ; 
+                CMPB    A, 0b4h                ; if we are over column 5 or 6 in the fuel table
+                JLT     label_0df0             ; JUMP!
+                INCB    r7                     ; else we are under ~6k and in table col 0 - 5; r7 = 2
+                
                                                ; 0DF0 from 0DC8 (DD0,108,13D)
                                                ; 0DF0 from 0DCA (DD0,108,13D)
                                                ; 0DF0 from 0DCD (DD0,108,13D)
@@ -2970,15 +2989,15 @@ label_0de4:     CMPB    A, 0a6h                ; 0DE4 0 108 13D C5A6C2
                                                ; 0DF0 from 0DD6 (DD0,108,13D)
                                                ; 0DF0 from 0DE7 (DD0,108,13D)
                                                ; 0DF0 from 0DED (DD0,108,13D)
-label_0df0:     LB      A, r7                  ; 0DF0 0 108 13D 7F
-                SRLB    A                      ; 0DF1 0 108 13D 63
-                MB      off(0011ch).7, C       ; 0DF2 0 108 13D C41C3F
-                MB      C, off(0011dh).1       ; 0DF5 0 108 13D C41D29
-                MB      off(0011dh).2, C       ; 0DF8 0 108 13D C41D3A
-                MB      C, off(0011dh).0       ; 0DFB 0 108 13D C41D28
-                MB      off(0011dh).1, C       ; 0DFE 0 108 13D C41D39
-                SRLB    A                      ; 0E01 0 108 13D 63
-                MB      off(0011dh).0, C       ; 0E02 0 108 13D C41D38
+label_0df0:     LB      A, r7                  ; A = r7; will be 0000b, 0001b, or 0010b
+                SRLB    A                      ; shift right. C = r7.0
+                MB      off(0011ch).7, C       ; 
+                MB      C, off(0011dh).1       ; 
+                MB      off(0011dh).2, C       ; 
+                MB      C, off(0011dh).0       ; 
+                MB      off(0011dh).1, C       ; 
+                SRLB    A                      ; 
+                MB      off(0011dh).0, C       ; 0011dh.0 gets 1 when we are below the rpm/map
 
                 ;call o2 sensor routine1
                 ;DP = 11bh
@@ -7659,8 +7678,9 @@ label_2606:     SC                             ; mugen pr3-> RC
 label_2607:     MB      off(0002bh).2, C       ; 12bh.2
 
 ;********************************************
-;16fh - ??
+;16fh - has something to do with choosing open/closed loop...
                 VCAL    4                      ; 260A 0 080 205 14
+                
                 MOVB    r2, #0dah              ; 260B 0 080 205 9ADA
                 JBR     off(0120h).4, label_2613  ; 120h.4
                 JBR     off(0011dh).6, label_2653 ; 2610 0 080 205 DE1D40
@@ -7678,12 +7698,15 @@ label_2624:     MOV     DP, #00278h            ; OLD tps
                 LB      A, [DP]                ; 2627 0 080 205 F2
                 ADDB    A, r0                  ; add 4 or 6
                 CMPB    A, 0ach                ; new TPS
-                JLT     label_2640             ; 262C 0 080 205 CA12
+                JLT     label_2640             ; jump if TPS increasing
+                
+                ; else TPS decreasing
                 MOVB    r2, #0fbh              ; 262E 0 080 205 9AFB
                 MOVB    r6, off(001a0h)        ; 2630 0 080 205 C4A04E
                 LB      A, off(001a1h)         ; 2633 0 080 205 F4A1
-                CMPB    r3, #000h              ; 2635 0 080 205 23C000
-                JEQ     label_263b             ; 2638 0 080 205 C901
+                CMPB    r3, #000h              ; compare last 16fh value to 0
+                JEQ     label_263b             ; if 0 jump
+                
                 LB      A, r6                  ; 263A 0 080 205 7E
                                                ; 263B from 2638 (DD0,080,205)
 label_263b:     CMPB    A, 0a6h                ; 263B 0 080 205 C5A6C2
@@ -7692,8 +7715,8 @@ label_263b:     CMPB    A, 0a6h                ; 263B 0 080 205 C5A6C2
                                                ; 2640 from 261B (DD0,080,205)
                                                ; 2640 from 262C (DD0,080,205)
 label_2640:     MOVB    r0, #001h              ; 2640 0 080 205 9801
-                LB      A, r3                  ;
-                JEQ     label_2647             ; 2643 0 080 205 C902
+                LB      A, r3                  ; load old 16fh value
+                JEQ     label_2647             ; jump if 0
                 MOVB    r0, #00ah              ; 2645 0 080 205 980A
                                                ; 2647 from 2643 (DD0,080,205)
 label_2647:     LB      A, off(001a2h)         ; 2647 0 080 205 F4A2
@@ -7706,7 +7729,7 @@ label_2647:     LB      A, off(001a2h)         ; 2647 0 080 205 F4A2
                                                ; 2653 from 263E (DD0,080,205)
                                                ; 2653 from 264F (DD0,080,205)
 label_2653:     MOVB    off(016fh), r2        ; 16fh
-; 16fh could be #dah, #fbh, 0, or #5h
+; 16fh could be #dah, #fbh, 0, or #f5h
 ;**************************************************************************
 
                 MOVB    r0, #005h              ; 2656 0 080 205 9805
