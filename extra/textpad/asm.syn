@@ -1,0 +1,171 @@
+; TextPad syntax definitions for oki asm
+; Copyright (C) 1998-2002, Helios Software Solutions
+
+C=1
+
+[Syntax]
+Namespace1 = 6
+IgnoreCase = Yes
+KeyWordLength =
+BracketChars = []
+OperatorChars = 
+PreprocStart = 
+HexPrefix = 
+SyntaxStart = 
+SyntaxEnd = 
+CommentStart = 
+CommentEnd = 
+CommentStartAlt = 
+CommentEndAlt = 
+SingleComment = ;
+SingleCommentCol =
+SingleCommentAlt =
+SingleCommentColAlt =
+SingleCommentEsc = 
+StringsSpanLines = No
+StringStart = #
+StringEnd = h
+StringAlt = #
+StringEsc = ;
+CharStart = 0
+CharEnd = h
+CharEsc = 
+
+[Keywords 1]
+A
+C
+DP
+USP
+X1
+X2
+PSWL
+PSWH
+PSW
+
+[Keywords 2]
+ER0
+ER1
+ER2
+ER3
+R0
+R1
+R2
+R3
+R4
+R5
+R6
+R7
+
+[Keywords 3]
+ACAL
+ADC
+ADCB
+ADD
+ADDB
+AND
+ANDB
+BAND
+BANDN
+BOR
+BORN
+BRK
+BXOR
+CAL
+CLR
+CLRB
+CMP
+CMPB
+CMPC
+CMPCB
+CPL
+DB
+DEC
+DECB
+DI
+DIV
+DIVB
+DIVQ
+DJNZ
+DW
+EI
+EXTND
+FCAL
+FILL
+FILLB
+FJ
+FRT
+INC
+INCB
+J
+JBR
+JBRS
+JBS
+JBSR
+JRNZ
+JGT
+JGE
+JLT
+JLE
+JEQ
+JNC
+JZ
+JNE
+L
+LB
+LC
+LCB
+MAC
+MB
+MBR
+MOV
+MOVB
+MUL
+MULB
+NEG
+NEGB
+NOP
+OR
+ORB
+POPS
+PUSHS
+RB
+RBR
+RC
+RDD
+ROL
+ROLB
+ROR
+RORB
+RT
+RTI
+SB
+SBC
+SBCB
+SBR
+SC
+SCAL
+SDD
+SJ
+SLL
+SLLB
+SQR
+SQRB
+SRA
+SRAB
+SRL
+SRLB
+ST
+STB
+SUB
+SUBB
+SWAP
+TBR
+TJNZ
+TJNZB
+TJZ
+TJZB
+VCAL
+XCHG
+XCHGB
+XOR
+XORB

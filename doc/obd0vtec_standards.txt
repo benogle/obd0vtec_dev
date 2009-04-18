@@ -1,0 +1,192 @@
+Standards for all obd0 vtec roms Ben Ogle creates. 
+
+Not all of this will be present in all roms. This document
+helps me to not overwrite already used rom locations. It
+is here to hopefully make ALL new asm code compatible 
+with all other new asm code from the editor standpoint.
+
+-----------------------------
+       	 STOCK DATA
+-----------------------------
+
+jdm pw0
+Address: 0x36e0 - 0x3fff
+
+euro pw0
+Address: 0x3700 - 0x3fff
+
+jdm pr3
+Address: 0x3744 - 0x3fff
+Note: no unused space til 0x42666
+
+-----------------------------
+       	  NEW CODE
+-----------------------------
+
+ALL NEW/NOT STOCK CODE STARTS AT 0x4270.
+
+OLD LAUNCH CONTROL
+jdm pw0
+Address: 0x32fb
+euro pw0
+Address: 0x324d
+jdm pr3
+Address: 0x4266
+
+DATA LOGGING
+jdm pw0
+Address: 0x3310 - 0x33a8
+eur opw0
+Address: 0x3262 - 0x32fa
+jdm pr3
+Address: 0x427b - 0x4310
+
+BOOST
+jdmpw0
+Address: 0x33d0
+eur opw0
+Address: 0x3320
+jdm pr3
+Address: 0x4340
+
+ITB CODE (should be in boost code)
+Address: 0x4400
+
+DISABLE CODES
+Address: 0x5000 - 0x501d
+
+FUEL SCALING
+Address: 0x502a - 0x509f
+
+CEL ROUTINES
+Address: 0x50a0 - ?
+
+BOOST CUT
+Address: ? - ?
+
+NEW LAUNCH CONTROL
+Address: ? - ?
+
+-----------------------------
+   FUEL/IGN RELATED TABLES
+-----------------------------
+
+MAP VECTOR
+Address: 0x63D2
+Max length: 93 bytes
+
+TPS VECTOR
+Address: 0x642F
+Max length: 93 bytes
+
+RPM VECTOR IGNITION
+Address: 0x648C
+Max length: 93 bytes
+
+RPM VECTOR VTEC IGNITION
+Address: 0x64E9
+Max length: 93 bytes
+
+RPM VECTOR FUEL
+Address: 0x6546
+Max length: 93 bytes
+
+RPM VECTOR VTEC FUEL
+Address: 0x6583
+Max length: 93 bytes
+
+IGNITION MAP NON VTEC (30X30)
+Address: 0x6600
+Max length: 900 bytes
+
+IGNITION MAP VTEC (30X30)
+Address: 0x6984
+Max length: 900 bytes
+
+FUEL MAP NON VTEC (30X30)
+Address: 0x6D08
+Max length: 930 bytes
+
+FUEL MAP VTEC (30X30)
+Address: 0x70AA
+Max length: 930 bytes
+
+-----------------------------
+       EDITABLE STUFF
+-----------------------------
+
+ROM MOTES
+Address: 0x7e80
+Max length: 128 bytes
+
+CODE DISABLE VECTOR
+Address: 0x7f00
+Max length: 16 bytes
+
+DATALOGGER TABLE
+Address: 0x7f10
+Max length: 32 bytes
+
+-----------------------------
+	OPTION BYTES
+-----------------------------
+
+BOOST CUT MAP VAL
+Address: ?
+Max Length: 1 byte
+
+
+OUTPUT SELECTION
+Address: ?
+Max Length: 1 byte
+
+ITB TPS SCALING MIN
+Address: 0x7FEC (0x7FED is used too)
+Max length: 1 byte
+
+ITB TPS SCALING MAX
+Address: 0x7FEE (0x7FEF is used too)
+Max length: 1 byte
+
+ITB MAP-TPS XOVER
+Address: 0x7FF0
+Max length: 1 byte
+
+SHIFT LIGHT RPM
+Address: 0x7FF2
+Max length: 2 bytes
+
+OUTPUT ROUTINES OPTION (01:shiftLight, 02:knock, anythingElse:off)
+Address: 0x7FF4
+Max length: 1 byte
+
+
+DELTA_TPS FUEL SCALE (0 = 0%, 0x80 = 100%, 0xff= 200%)
+Address: 0x7FF8
+Max length: 1 byte
+
+LIMP MODE FUEL SCALE (0 = 0%, 0x80 = 100%, 0xff= 200%)
+Address: 0x7FF9
+Max length: 1 byte
+
+CRANKING FUEL SCALE (0 = 0%, 0x80 = 100%, 0xff= 200%)
+Address: 0x7FFA
+Max length: 1 byte
+
+MAIN FUEL SCALE (0 = 0%, 0x80 = 100%, 0xff= 200%)
+Address: 0x7FFB
+Max length: 1 byte
+
+
+NOTE: more needs to be edited than just these to add columns/rows to the maps!
+COLUMNS IN MAP
+Address: 0x7FFC
+Max length: 1 byte
+
+ROWS IN MAP
+Address: 0x7FFD
+Max length: 1 byte
+
+COLUMNS * ROWS
+Address: 0x7FFE/0x7FFF
+Max length: 2 bytes

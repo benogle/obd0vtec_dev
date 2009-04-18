@@ -1,0 +1,437 @@
+Author(s): Ben Ogle
+Contributors: Mr X, Nico, Malte, Anton
+
+- As of 9-03-06 this document does not exist for any other code base. I chose 
+  the JDM Pw0 code because it is the cleanest of all the Obd0 VTEC code bases.
+  However, many of these locations are the same between the code bases. If not,
+  the address for the memory in another code base is typically easliy found
+  by doing a comparison of the code using the address in the JDM Pw0 and the 
+  same code in the other code base.
+
+[JDM PW0 RAM]
+
+RAM 98h = ADCR0H = WaterCoolantTemp
+RAM 99h = ADCR1H = AirIntakeTemp (off 126h.5 is set if ADCR1 > 80h)
+RAM A1h = ADCR2H = LambdaSensor 1
+RAM A2h = ADCR3H = LambdaSensor 2
+RAM A8h = ADCR4 = PA sensor
+RAM B0h = ADCR5 = MAP sensor value
+RAM A5h = ADCR6H = Alternator
+RAM AAh = ADCR7 = TPS
+
+     ;PR3:
+     ; $98=ADCR1H=air temp               
+     ; $99=VOIE 0H=water temp       	  	      $9D=VOIE 4H=ground
+     ; $9A=VOIE 1H= idle adjust conn.(B20) 	      $9E=VOIE 5H=auto jumper (grounded)
+     ; $9B=VOIE 2H= 12V		       		      $9F=VOIE 6H=CONNECTEUR B9  = Brake switch
+     ; $9C=VOIE 3H= 5V        		      	      $A0=VOIE 7H=CONNECTEUR B18 ??
+     
+98 WaterCoolantTempSensor
+99 IntakeAirTempSensor
+9A Battery Voltage (12V)
+9B 0-5V ECU power
+9C ground
+9D timing adjust connector (B20)
+9E Brake Switch (B9)
+9F B18
+
+A0 
+A1 Lambda 1 value from 0 to 50 decimal <1fh = lean >1fh = rich
+A2 Lambda 2 value from 0 to 50 decimal <1fh = lean >1fh = rich
+A3 Temp
+A4 IAT
+A5 Alternator
+A6 1 byte RPM non vtec
+A7 1 byte RPM vtec
+A8
+A9 AmbientPressureSensor (Inside ECU)
+AA TPS Sensor same as AB
+AB TPS Sensor value 0 to 255 decimal. Attn for offset when idle
+AC TPS. calculated from ADCR7 in function -> label_2e4f (delta TPS)
+AD TPS. calculated from ADCR7 in function -> label_2e4f (delta TPS)
+AE TPS Sensor same as AB
+AF TPS related
+
+B0 MAP sensor value (from ADCR5)
+B1 -MapSensor high byte
+B2 sort of old map values. This value follows b4h slowly. (used in delta_map calc)
+B3 -High byte
+B4 Map image 0 - DFh, before delta_map adjustment  
+B5 Map-Image 0 - DFh, after delta_map adjustment 
+	most significant 4 bits determine column in map,last column used for interpolation ONLY
+	least significant bits are the interpolation value (0: mostly using cell MSB, fh: mostly using cell MSB+1)
+B6 -High byte from initial MAP sensor value. Compared to b1h to see if there is a code 5.
+B7 calculated from b4h in delta_map routine
+B8 difference in timer 1 and old timer 1 (used in rev count routine)
+B9 -B8 high byte
+BA Current revs timer count (rpm = 1852000/dec): number of timer ticks to go 45deg. of crank rotation
+BB -cur revs high byte
+BC calculated from BAh, amount rpm is increasing or decreasing. 11eh.4 = 1 if increasing
+BE Average of last 4 rev count values
+BF -High BE
+
+C0 [c0h] = ([c0h] - [c0h]*er0/10000h) + (A*er0/10000h) where er0 = 3000h or d000h: follows BEh in asemptotic style
+C1 -high byte
+C2 [c2h] = |[bah] - [172h]|: difference between current rpm and target idle
+C3 -high byte
+C4 Speed Word: dunno the formula.
+C5 -High byte
+C6 Old timer 1 counter value from 0xc8
+C8 Timer 1 counter when INT0 occurs
+CA old e2h
+CB Speed Sensor byte
+CC IE value normally
+CD -high byte
+CE IE value when in interrupt
+CF -high byte
+
+D0 Injector related
+D2 Injector related
+D4 Injector related
+D6 Injector related: seems to be the real final fuel. Its calculated from the final fuel vals
+	and the o2 sensor(s): [d6h] = [144h]*[162h or 164h]/10000h *2 + [146h]
+D8 Ignitor firing related
+DA Ignitor firing related 
+DC Ignitor firing related
+DE Ignitor firing related
+DF Ignitor firing related
+
+E0 old timer 1. used in rpm routine to find time to rotate 45deg.
+E2 Timer 1 over flow indicator for VSS interrupt
+E3 TDC?
+E4 Crank position. range is 0 to 3. Guess: 1 value for every 45 degrees
+E5 Cylinder. Seems to follow firing order: [0]->cyl,[1]->cyl3,[2]->cyl4,[3]->cyl2
+E7
+E8 counter for cel codes??
+E9
+EA
+EB Reboot 'life' counter. Starts at 0x20, when reaches 0 the MCU reboots!
+ED
+EE
+
+F0 Error code after reboot
+ - 47h (NMI), 44h (WDT), 4ch (??), 42h (system error), 41h (??), 48h (checksum), 
+   4ch (??), 4dh (??), 49h (life counter == 0?), 43h (??), 4ah (ADC error), 
+F1 JDM PW0 ONLY: ELD
+F2 JDM PW0 ONLY(twice)
+F3 JDM PW0 ONLY: ELD related
+F4
+F5
+F6
+F7
+F8 oil pressure switch? If > 32h there is enough oil pressure.
+F9
+FA JDM PW0 ONLY: ELD related
+FB ELD related
+FC has the number of slow (high nibble) and fast blinks (low nibble) for the current code 
+FD
+FE
+FF Inputs. Read from external chip @ 18fch in JDM PW0 See [Bit] section
+
+129h VTEC byte, see bit section
+
+130h Fault code 1: codes 1-8
+131h Fault code 2: codes 9-16
+132h Fault code 3: codes 17-24
+	Fault code structure for 130h:
+	bits    : 0 0 0 0 0 0 0 0 
+	CEL code: 8 7 6 5 4 3 2 1
+
+133h
+134h Final ignition value. Well, sorta
+135h function of vcals on a7h and 9Ah: vcal0(a7h,038c9h) * vcal(9ah,038d7h)*2*2/100h: range is fh to b3h
+136h 2's compliment of [134h]
+137h some ignition correction
+138h raw interpolation from ignition map
+139h brake switch timing correction
+13Ah ECT ignition trim. if error [13ah] = [13fh]
+13Bh idle adjust connector ingnition correction (from ECU pin B20) (0 if not plugged in)
+13Ch some ignition correction
+13Dh Knock ignition correction 
+13Eh another ignition correction
+13Fh water temp related. essentially vcal_2(a3h, #03907h). error trim for 13ah
+
+140h map fuel value non vtec
+141h -high byte
+142h map fuel value vtec
+143h -high byte
+144h 'main' final fuel value (from the map) with some corrections not including O2 sensor.
+	([140h or 142h] * [15eh]/10000h)/2
+145h -high byte
+146h All fuel corrections uncluding AC
+	([16ah]* ([14ah]*[166h]/100h)/100h) + [14ch] + [150h] + [152h] + [14eh]
+147h -high byte
+148h main final fuel and corrections not including AC or O2 sensor.
+	Has no effect on injectors as far as I can tell. In the fuel scaling script,
+	I had to scale 144h and 146h.
+	formula = [144h] + [146h] - [14eh]
+149h -high byte
+14ah delta TPS fuel trim
+14bh -high byte
+14ch battery VCAL_1ed with vector at ROM #37e3h (JDM)
+14dh -high byte
+14eh AC fuel trim
+14dh -high byte
+
+150h TPS related?
+152h timing adjustment connector trim (ecu pin B20). 0 if not plugged in.
+158h correction based on voltage (9bh). uses a vector at 037d7h in JDM Pw0
+15ah IAT fuel trim
+
+162h primary o2 fuel trim; see code from 25ch to 294h for the usage in the final fuel 
+164h secondary o2 fuel trim; 
+166h (value is 340 - 400 typical) (temp?) fuel trim
+167h -high byte
+169h based on map image (b4h).value between 51h and dfh fuel trim
+16ah ect? between 0 and 100h (0) fuel trim
+16bh -high byte 
+16ch another ect? fuel trim
+16dh -high byte 
+
+172h target idle rev count (same format as bah/bbh) 
+173h target idle high byte
+176h water temp related: vcal_1(a3h, #039e1h); used in 190h/191h calc
+
+197h water temp related: vcal_0(a3h,#039bdh)
+
+1aah counter for finding codes to blink on the LED. 
+	Incremented everytime through the blink funcion.
+
+used in o2 routine:
+162h or 164h
+1dah or 1dbh
+1c2h or 1c3h <--
+1c7h or 1c8h
+1c9h or 1cAh
+
+1ceh - 1ffh are counters DECd in the cel code blink routine. 
+            These counters are used throughout the code.
+
+1eeh buffer for AC routine (counter)
+1efh see 1eeh
+
+///cel code counters\\\
+these get DEC'd every time the cel code's corresponding 12eh bit is set
+so if the 12eh bit for that code is never set, then the counter never
+gets DEC'd
+
+loc  code		: corresponding 12eh cel code bit
+
+1b4h CKP		: 12eh.0
+1b5h TDC		: 12eh.1
+1b6h CYP		: 12eh.2
+1b7h ignition out	: 12eh.3
+1b8h CKP		: 12eh.4 
+1b9h TDC		: 12eh.5
+1bah CYP		: 12eh.6
+1bbh fuel inj. sys	: 12eh.7
+
+
+1D5h set to 14h when vtec is engaged, cleared when vtec is disengaged
+
+1dfh The counter for the code being blinked on the LED
+
+202h IACV duty cycle related. Its calced in the IACV routine and dumped into PWMR0
+	in the PWM interrupt
+204h Just a copy of 202h?
+
+
+rev count values. Each is count for 45deg. of rank rotation. Averaged for bah/bbh
+206h 
+208h
+20ah
+20ch
+
+; 1st     2nd     3rd    4th
+;[20eh]  [210h]  [212h]  er3
+
+20eh to 212h = old rev count values. They are words and the lower the address the newer the value.
+
+214h Something to do with injector timing
+216h Something to do with injector timing
+218h Something to do with injector timing
+21ah mask to choose an injector (this bit pattern shifts with the firing order)
+	typically something like: 01110111b,
+	                          10111011b,
+	                          11011101b, or
+	                          11101110b
+21bh inverse of 21ah...usually
+21ch mask to turn on/off some injector(s). ANDed with P2 to turn on/off injector. All 1s is all off.
+21dh IACV related
+              
+228h ??
+229h ??
+230h ??
+231h ??
+	
+269h ??
+
+278h = old TPS value
+279h = old temp value
+
+274h follows 162h in similar fashion to c0h (so its the 'old' primary o2 correction)
+276h follows 164h ('old' secondary o2 correction)
+
+27bh CEL led blink ram byte 1 codes 1-8 (same structure as 130h-132h)
+27ch CEL led blink ram byte 2 codes 9-16
+27dh CEL led blink ram byte 3 codes 17-24
+
+[Bit]
+TCON2.2 = TM0IO output (P3.6) when timer in realtime mode. 
+	  Ignitor output.
+TCON2.3 = Primer for bit above. When TM2 == TMR2 then this
+          bit is loaded into TCON2.2.
+
+P0.3 = purge control solenoid
+P0.6 = CEL dash light
+P0.7 = AC clutch output
+
+P1.0 = set (in vtec routine) if error code 3. If all vtec bits are ok, then P1.0 = 0
+P1.1 = VTEC p1.1 = 1 if all is good
+P1.2 = CEL LED out
+
+P2.0 = injector
+P2.1 = injector
+P2.2 = injector
+P2.3 = injector
+
+P2.4 = has to do with limp mode somehow. it seems that 2.4 == 1 when in limp mode.
+
+FD.3 = bit to indicate that the code is setting the error bits (bytes 130h-132h)
+       1 if we are in the middle of setting error bits, 0 if not. int_NMI 
+       finishes setting the bits if we were in the middle of it.
+
+FE.0 = flag ???
+FE.1 = Set by serial RX BRG interrupt, reset in VCAL 4
+FE.2 = flag ???, reset in VCAL 4
+FE.3 = flag ???, reset in VCAL 4
+FE.4 = flag ???, reset in VCAL 4. if set, vcal_4 calls the ecu LED blink function 
+FE.5 = flag ???
+FE.6 = flag set when something with ignition, CYP, TDC, or CKP is bad. This may be the limp mode bit
+FE.7 = flag set when we are on the rev limiter
+
+//inputs
+FF.0 = Knock sensor??? Auto Trans lockup input?
+FF.1 = 
+FF.2 = vtec solenoid feedback
+FF.3
+FF.4
+FF.5
+FF.6 = AC switch
+FF.7 = Starter signal
+//end inputs
+
+118h.0 = 1 if CKP error. reset in timer0 interrupt
+118h.3 = 1 if VSS error, or if car is going really fast (105mph+)
+118h.4 = starter signal (1 is starter on)
+118h.6 = 9ah(batt V) cmpb #54h. its 1 if battery voltage < #54h
+118h.7 = set for automatic tranny
+
+119h.1 = 1 if [134h] == 0 when e4h == 3 and 136h is found
+119h.3 = 1 if [b4h] > #b3h (if 119h.3 == 1 last time) or #b8h
+119h.5 = maybe old 119h.3
+
+11ah.0 = 1 if first TDC code (12eh.1) was set.
+11ah.1 = 1 if first CYP code (12eh.2) was set.
+11ah.5 = this bit seems to be when the engine is warming up
+	 1 if |[279h (old temp)]-[98h]| > 10h
+         1 if [98h] > [99h] (in real values: air temp is > water temp)
+         1 if |[99h]-[98h]|<4
+                
+11ah.6 = 1 if [b4h] > #b9h or #c0h (last 11ah.6 == 0)
+11ah.7 = 1 if where the idle connector ignition trim is calculated, 
+	 the code actually did a compare with the timing connector.
+	 There is a bunch of checking before it.
+	 
+11bh.0 = o2 related (seems to be for primary o2)
+
+11ch.0 = o2 related (seems to be for secondary o2)
+
+
+11eh.0 = 0 if VSS code
+11eh.4 = 1 if engine is accelerating. 0 if decel.
+11eh.5 = 0 when the code gets through the rev count calc alright
+
+11fh.0 = 1 if key on, engine off
+11fh.2 = 1 if old ACh < new ACh
+11fh.4 = 1 when starter is ON and RPM > #12h or #1dh
+       = 1 when starter is OFF and 11fh.4 (before) == 1 and RPM > #12h
+       = 1 when starter is OFF and 11fh.4 (before) == 0 and error with rev count
+       = 0 when starter is OFF and 11fh.4 (before) == 0 and NO err with rev count
+11fh.5 = newest
+11fh.6 = middle
+11fh.7 = oldest
+
+121h.1 = 1 when e3h != 4 in TDC checking routine
+121h.2 = 1 if ecu sees the CKP cel bit for >=6 iterations
+121h.3 = 1 when something is bad with ignition. 0 when all is good and ignition is ready to go
+
+122h.2 = 1 when car is running
+
+123h.3 = set if TPS value increased (newest)
+123h.4 = set if TPS value increased (middle)
+123h.5 = set if TPS value increased (oldest)
+
+125h.0 = idle related
+125h.1 = idle related
+125h.2 = 1 when [bah/bbh]<[172h/173h] (1 when revs are under target idle)
+
+126h.5 = 1 if IAT > #80h
+
+0129h.0
+0129h.1
+0129h.2
+0129h.3 = set when speed > 0x20 or 0x28 (VSS check)
+0129h.4 = set when current RPM > 1st vtec value
+0129h.5 = set when current RPM > 3rd vtec value
+0129h.6 = set only when 129.3, .4, .5 == 1 and P1.0 == 0 (primed?)
+0129h.7 = set when vtec is on.
+
+12ah.0 = 1 if colder than ~170deg. C, slower than ffh, and under ffh RPM
+	 pretty much this will be 1 unless the engine is really really hot.
+12ah.1 = 1 if ac is on
+12ah.3 = 0 if AC is on?
+12ah.4 = 1 if [a6h] > #feh or #ffh (last 11ah.4 == 0)
+
+;CEL codes: set by checking the sensor
+;checked to set setting 130h-132h (errors) and 27bh-27dh (errors that blink)
+; JDM PW0
+12ch.0 = code 3: MAP
+12ch.1 = code 6: ECT
+12ch.2 = code 7: TPS
+12ch.3 = code 5: MAP (mechanical)
+12ch.4 = code 13: barometric sensor
+12ch.5 = code 18: ?? 
+12ch.6 = code 19: auto lockup
+12ch.7 = code 10: IAT
+
+12dh.0 = code 14: IACV
+12dh.1 = code 8:  TDC
+12dh.2 = code 17: VSS
+12dh.3 = code 20: ELD
+12dh.4 = code 23: Knock sensor
+12dh.5 = code 24: ??
+12dh.6 = code 21: VTEC solenoid
+12dh.7 = code 22: oil pressure swich
+
+12eh.0 = code 4 (ckp)
+12eh.1 = code 8 (tdc)
+12eh.2 = code 9 (cyp)
+12eh.3 = code 15 (ignition output)
+12eh.4 = code 4 (ckp)
+12eh.5 = code 8 (tdc)
+12eh.6 = code 9 (cyp)
+12eh.7 = code 16 (fuel injector sys)
+
+[Misc]
+
+from HRED:
+
+Calc of RPM Coef :
+RPM_Coef = 7 900 000 / 32 / 8 * 60 = 1851562,5
+where :
+7900000 is the crystal
+32 is timer configuration : CLK/32 
+8 because in the distributor there are 16 thooth by rotation of camshaft
+so 8 by rotation of crank 
+60 for minute/second conversion.
