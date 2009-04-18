@@ -19,6 +19,10 @@ RAM B0h = ADCR5 = MAP sensor value
 RAM A5h = ADCR6H = Alternator
 RAM AAh = ADCR7 = TPS
 
+[NOTE]
+ ADCR1 is mapped to the B17 on the ec connector (window de-mister)
+ ADCR0 is connected to IC6, analog multiplexer
+
      ;PR3:
      ; $98=ADCR1H=air temp               
      ; $99=VOIE 0H=water temp       	  	      $9D=VOIE 4H=ground
