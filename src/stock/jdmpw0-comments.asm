@@ -4224,40 +4224,40 @@ label_1484:     MOV     er0, off(00148h)       ; get old fuel val
 
 
 
-                CLRB    r5                     ; 1489 1 108 13D 2515
-                CMPB    0a3h, #044h            ; 148B 1 108 13D C5A3C044
-                JGE     label_14d4             ; 148F 1 108 13D CD43
-                CMPB    0a6h, #0feh            ; 1491 1 108 13D C5A6C0FE
-                JLT     label_149a             ; 1495 1 108 13D CA03
+                CLRB    r5                     ; 
+                CMPB    0a3h, #044h            ; 
+                JGE     label_14d4             ; if under 137deg F, jump
+                CMPB    0a6h, #0feh            ; 
+                JLT     label_149a             ; if under 7200 RPM. Normal!
                 JBS     off(00122h).6, label_14d4 ; 1497 1 108 13D EE223A
                                                ; 149A from 1495 (DD1,108,13D)
-label_149a:     CMPB    0a6h, #037h            ; 149A 1 108 13D C5A6C037
-                JGE     label_14a8             ; 149E 1 108 13D CD08
-                SUB     A, er0                 ; 14A0 1 108 13D 28
-                JLT     label_14a8             ; 14A1 1 108 13D CA05
-                CMP     A, #00080h             ; 14A3 1 108 13D C68000
-                JGE     label_14be             ; 14A6 1 108 13D CD16
+label_149a:     CMPB    0a6h, #037h            ; 
+                JGE     label_14a8             ; if over idle jump
+                SUB     A, er0                 ; else A = new value - old value
+                JLT     label_14a8             ; if new < old, jump
+                CMP     A, #00080h             ; else if the difference is
+                JGE     label_14be             ; over 80h, jump
 
                 ;////////
                                                ; 14A8 from 149E (DD1,108,13D)
                                                ; 14A8 from 14A1 (DD1,108,13D)
-label_14a8:     CLR     A                      ; 14A8 1 108 13D F9
-                CMPB    0a3h, #02eh            ; 14A9 1 108 13D C5A3C02E
-                JGE     label_14fd             ; 14AD 1 108 13D CD4E
-                CMPB    0a6h, #0a9h            ; 14AF 1 108 13D C5A6C0A9
-                JGE     label_14fd             ; 14B3 1 108 13D CD48
-                JBR     off(00122h).6, label_14fd ; 14B5 1 108 13D DE2245
-                MOV     er0, #00100h           ; 14B8 1 108 13D 44980001
-                SJ      label_14e9             ; 14BC 1 108 13D CB2B
+label_14a8:     CLR     A                      ; 
+                CMPB    0a3h, #02eh            ; 
+                JGE     label_14fd             ; if colder than 156deg F
+                CMPB    0a6h, #0a9h            ; 
+                JGE     label_14fd             ; if over 2200 RPM
+                JBR     off(00122h).6, label_14fd ;
+                MOV     er0, #00100h           ;
+                SJ      label_14e9             ;
 
                 ;////////
                                                ; 14BE from 14A6 (DD1,108,13D)
-label_14be:     MOV     er0, #006d6h           ; 14BE 1 108 13D 4498D606
-                CMP     A, er0                 ; 14C2 1 108 13D 48
-                JGE     label_14c6             ; 14C3 1 108 13D CD01
-                ST      A, er0                 ; 14C5 1 108 13D 88
+label_14be:     MOV     er0, #006d6h           ; 
+                CMP     A, er0                 ; 
+                JGE     label_14c6             ; 
+                ST      A, er0                 ; 
                                                ; 14C6 from 14C3 (DD1,108,13D)
-label_14c6:     CMPB    0a6h, #014h            ; 14C6 1 108 13D C5A6C014
+label_14c6:     CMPB    0a6h, #014h            ; SUPER LOW RPM
                 L       A, #000b0h             ; 14CA 1 108 13D 67B000
                 JLT     label_14ed             ; 14CD 1 108 13D CA1E
                 L       A, #000b0h             ; 14CF 1 108 13D 67B000
@@ -4273,7 +4273,7 @@ label_14d4:     INCB    r5                     ; 14D4 1 108 13D AD
                 STB     A, r0                  ; 14DB 0 108 13D 88
                 CLRB    r1                     ; 14DC 0 108 13D 2115
                 SLL     er0                    ; 14DE 0 108 13D 44D7
-                L       A, off(0016ah)         ; 14E0 1 108 13D E46A
+                L       A, off(0016ah)         ; some ECT correction
                 MUL                            ; 14E2 1 108 13D 9035
                 LB      A, r2                  ; 14E4 0 108 13D 7A
                 L       A, ACC                 ; 14E5 1 108 13D E506
@@ -4282,7 +4282,7 @@ label_14d4:     INCB    r5                     ; 14D4 1 108 13D AD
 
                 ;/////////
                                                ; 14E9 from 14BC (DD1,108,13D)
-label_14e9:     L       A, off(0014ah)         ; 14E9 1 108 13D E44A
+label_14e9:     L       A, off(0014ah)         ; delta TPS
                 JEQ     label_14fd             ; 14EB 1 108 13D C910
                                                ; 14ED from 14CD (DD1,108,13D)
                                                ; 14ED from 14D2 (DD1,108,13D)
@@ -4292,7 +4292,7 @@ label_14ed:     MUL                            ; 14ED 1 108 13D 9035
                 LB      A, r2                  ; 14F2 0 108 13D 7A
                 L       A, ACC                 ; 14F3 1 108 13D E506
                 SWAP                           ; 14F5 1 108 13D 83
-                ADD     A, off(0014ch)         ; 14F6 1 108 13D 874C
+                ADD     A, off(0014ch)         ; some battery trim
                 JGE     label_14fd             ; 14F8 1 108 13D CD03
                                                ; 14FA from 14F0 (DD0,108,13D)
 label_14fa:     L       A, #0ffffh             ; 14FA 1 108 13D 67FFFF
@@ -4343,16 +4343,18 @@ label_152b:     SB      PSWH.0                 ; 152B 1 108 13D A218
                 MOV     er1, #0036bh           ; 1541 0 108 13D 45986B03
                 JLT     label_1558             ; 1545 0 108 13D CA11
                 INC     DP                     ; 1547 0 108 13D 72
-                CMPB    0a3h, #002h            ; 1548 0 108 13D C5A3C002
-                JLT     label_1555             ; 154C 0 108 13D CA07
-                CMPB    0a3h, #002h            ; 154E 0 108 13D C5A3C002
-                JLT     label_1572             ; 1552 0 108 13D CA1E
+                
+                CMPB    0a3h, #002h            ; SUPER HOT
+                JLT     label_1555             ; 
+                CMPB    0a3h, #002h            ; SUPER HOT
+                JLT     label_1572             ; 
+                
                 INC     DP                     ; 1554 0 108 13D 72
                                                ; 1555 from 154C (DD0,108,13D)
 label_1555:     MOV     er1, off(00156h)       ; 1555 0 108 13D B45649
                                                ; 1558 from 1545 (DD0,108,13D)
 label_1558:     L       A, 0d6h                ; 1558 1 108 13D E5D6
-                SUB     A, off(0014eh)         ; 155A 1 108 13D A74E
+                SUB     A, off(0014eh)         ; AC fuel trim
                 JLT     label_1567             ; 155C 1 108 13D CA09
                 CMP     er1, A                 ; 155E 1 108 13D 45C1
                 JGE     label_1567             ; 1560 1 108 13D CD05
@@ -8737,7 +8739,7 @@ label_2b4d:     MB      PSWL.4, C              ; 1 if bad? 0 if good
                 L       A, [DP]                ; d4h
                 JEQ     label_2ba1             ; if d4h == 0, jump (typical)
 
-				;case 1
+				;case 3
                 MOV     X1, A                  ; else X1 = d4h
                 MB      C, off(0021bh).0       ; C = 21bh.0
                 RORB    off(0021bh)            ; Roll right...
@@ -8767,8 +8769,8 @@ label_2b70:     CAL     label_2c8a             ; 2B70 1 200 214 328A2C
                 SJ      label_2ba1             ; jump to converge
 
 
-				;case 2
-				;DP = d0h
+                ;case 1
+                ;DP = d0h
                                                ; 2B78 from 2B5D (DD1,200,214)
 label_2b78:     MOV     X1, A                  ; X1 = d0h's val
                 MB      C, off(0021bh).7       ; 21bh.7
@@ -8799,7 +8801,7 @@ label_2b78:     MOV     X1, A                  ; X1 = d0h's val
                 ANDB    r0, A                  ; AND with r0
                 SJ      label_2b97             ; jump n call label_2c8a 2 more times
 
-                ;case 3
+                ;case 2
                 ; DP = d2h
                                                ; 2B8A from 2B62 (DD1,200,214)
 label_2b8a:     MOV     X1, A                  ; X1 = d2h
