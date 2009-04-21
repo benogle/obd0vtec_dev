@@ -19,6 +19,7 @@
 
 ;INPUTS:
 ;B3  - A/C clutch switch - ON -> ffh.6 == 0 (pin to ground)
+;B11 - Rear de-mister    - 12v on B11, ADCR1h = 00h. 0v on B11, ADCR1h = ffh
 ;
 ;ram inputs; Ecu uses all of them
 ;FFh.0 = Knock sensor??? Auto Trans lockup input?
