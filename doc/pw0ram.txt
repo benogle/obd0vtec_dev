@@ -296,6 +296,8 @@ P2.3 = injector
 
 P2.4 = has to do with limp mode somehow. it seems that 2.4 == 1 when in limp mode.
 
+P5.1 = Rear window de-mister input
+
 FD.3 = bit to indicate that the code is setting the error bits (bytes 130h-132h)
        1 if we are in the middle of setting error bits, 0 if not. int_NMI 
        finishes setting the bits if we were in the middle of it.
