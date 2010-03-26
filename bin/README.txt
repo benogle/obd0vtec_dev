@@ -1,4 +1,4 @@
-Contained in this bin folder aer two applications: asm.exe, and dasm.exe.
+Contained in this bin folder are three applications: asm.exe, dasm.exe and oki_disasm.exe
 
 
 ASM.EXE
@@ -13,3 +13,8 @@ DASM.EXE
 Dasm will disassemble a .bin file into assembly code:
 
 > dasm.exe inputBin.bin outputAsm.asm 0 0
+
+
+OKI_DISASM.EXE
+
+oki_disasm is another disassembler with a GUI
