@@ -20,7 +20,9 @@
 ;INPUTS:
 ;B3  - A/C clutch switch - ON -> ffh.6 == 0 (pin to ground)
 ;B11 - Rear de-mister    - 12v on B11, ADCR1h = 00h. 0v on B11, ADCR1h = ffh
+;B20 - Timing Adjust Connector
 ;
+;C10 - Brake Switch
 ;ram inputs; Ecu uses all of them
 ;FFh.0 = Knock sensor??? Auto Trans lockup input?
 ;FFh.1 =
@@ -1528,7 +1530,7 @@ label_06e8:     STB     A, r6                  ; 06E8 0 108 20E 8E
                 RC									 ;reset carry
                 MOV     X1, #03ce5h					 ;vtec ignmap
                 MOV     X2, #03bc6h					 ;vtec rpm scalars
-                JBS     off(00129h).7, label_0700	 ;if vtec.7 then skip the next 5 lines
+                JBS     off(00129h).7, label_0700	 ;if vtec.7 then skip the next 5 lines  (vtec is on)
                 LB      A, 0a6h						 ;rpm low byte -> acc
                 MB      C, off(00129h).1			 ;set carry to some vtec val bit 1
                 MOV     X1, #03be6h					 ;else no vtec so set X1 to -> no vtec ign map
@@ -2660,7 +2662,7 @@ label_0c34:     CMPB    A, 0a6h                ; 0C34 0 108 13D C5A6C2
 ;lo cam rev is 3918h
 ;high cam is 391ah
 
-                MOV     DP, #03918h             ;
+                MOV     DP, #03918h             ; load first revlimit from revlimits list
                 L       A, #03920h              ;
                 MOV     er0, #00000h			; feels -> #00270h, stock -> #003cfh, maybe speed lim?
                 MB      C, 0feh.7				; if this bit then DP -> 3920h (restart) else DP->3918h (limit)
@@ -5024,7 +5026,7 @@ label_18ec:     CLR     A                      ; 18EC 1 080 213 F9
 
                 ;get some ON/OFF inputs
                 MOV     DP, #04000h            ; external chip read
-                LB      A, [DP]                ;
+                LB      A, [DP]                ; Read into A
                 STB     A, 0ffh                ; dump into ffh
                 J       label_2156             ; jump over vcal4
 
@@ -5480,7 +5482,7 @@ label_1a7f:     MOV     DP, #000f2h            ; 1A7F 0 080 1AB 62F200
                                                ; 1A89 from 1A7D (DD0,080,1AB)
 label_1a89:     LB      A, 0f3h                ; 1A89 0 080 1AB F5F3
                 JBS     off(0123h).7, label_1ab4 ; 1A8B 0 080 1AB EF2326
-                JBS     off(0011fh).4, label_1ab4 ; 1A8E 0 080 1AB EC1F23
+                JBS     off(0011fh).4, label_1ab4 ; Jump when starter is on
                 JBS     off(0127h).7, label_1ab4  ; 12fh.7
 
                 ;here with no errors
@@ -5715,9 +5717,9 @@ label_1b62:     ANDB    off(012ah), #05fh       ; 1B62 0 080 1AB C42AD05F
                 JBR     off(0128h).1, label_1b84  ; 1B6C 0 080 1AB D92815
 
                 MB      C, 0ffh.6              ; AC switch Input
-                JLT     label_1b84             ; 1B72 0 080 1AB CA10
-                CMPB    0a4h, #000h            ; 1B74 0 080 1AB C5A4C000
-                JGE     label_1b84             ; 1B78 0 080 1AB CD0A
+                JLT     label_1b84             ; Jump if AC off (ffh.6 == 1
+                CMPB    0a4h, #000h            ; Compare IAT to 0
+                JGE     label_1b84             ; Jump if IAT > 0
                 LB      A, off(001cch)         ; 1B7A 0 080 1AB F4CC
                 JEQ     label_1b84             ; 1B7C 0 080 1AB C906
                 RB      off(012ah).6            ; 1B7E 0 080 1AB C42A0E
@@ -5826,13 +5828,13 @@ label_1bf0:     VCAL    1                      ; 1BF0 0 080 213 11
 ;*******************
 
                 ;euro pw0 doesnt have from here
-                RB      off(00127h).2          ; 1BF3 0 080 213 C4270A
+                RB      off(00127h).2          ; Clear 127h.2
                 MB      C, 0ffh.4              ; input
                 JGE     label_1c10             ; 1BF9 0 080 213 CD15
-                SB      off(00127h).1          ; 1BFB 0 080 213 C42719
-                RB      off(00127h).0          ; 1BFE 0 080 213 C42708
+                SB      off(00127h).1          ; Set 127h.1
+                RB      off(00127h).0          ; Clear 127h.0
                 JEQ     label_1c0a             ; 1C01 0 080 213 C907
-                SB      off(00127h).2          ; 1C03 0 080 213 C4271A
+                SB      off(00127h).2          ; Set 127h.2
                 MOVB    off(001f4h), #000h     ; 1C06 0 080 213 C4F49800
                                                ; 1C0A from 1C01 (DD0,080,213)
 label_1c0a:     MOVB    off(001cfh), #002h     ; 1C0A 0 080 213 C4CF9802
@@ -5841,7 +5843,7 @@ label_1c0a:     MOVB    off(001cfh), #002h     ; 1C0A 0 080 213 C4CF9802
 label_1c10:     JBR     off(00127h).1, label_1c2b ; 1C10 0 080 213 D92718
                 LB      A, off(001f4h)         ; 1C13 0 080 213 F4F4
                 JNE     label_1c2b             ; 1C15 0 080 213 CE14
-                SB      off(00127h).0          ; 1C17 0 080 213 C42718
+                SB      off(00127h).0          ; set 127h.0
                 MOV     X1, #039b7h            ; 1C1A 0 080 213 60B739
                 LB      A, 0a3h                ; 1C1D 0 080 213 F5A3
                 VCAL    3                      ; 1C1F 0 080 213 13
@@ -6112,14 +6114,14 @@ label_1dbb:     ST      A, off(00194h)         ; 1DBB 1 080 213 D494
 label_1dbd:     RB      off(0126h).0            ; 1DBD 1 080 213 C42608
                 MOV     X1, #03a08h            ; 1DC0 1 080 213 60083A
                 JBR     off(0125h).5, label_1df4 ; 1DC3 1 080 213 DD252E
-                RB      off(00127h).4          ; 1DC6 1 080 213 C4270C
-                MB      C, 0ffh.3              ; 1DC9 1 080 213 C5FF2B
-                MB      off(00127h).4, C       ; 1DCC 1 080 213 C4273C
+                RB      off(00127h).4          ; Clear 127h.4
+                MB      C, 0ffh.3              ; 
+                MB      off(00127h).4, C       ; Move ffh.3 into 127h.4
                 JEQ     label_1dd4             ; 1DCF 1 080 213 C903
                 XORB    PSWH, #080h            ; 1DD1 1 080 213 A2F080
                                                ; 1DD4 from 1DCF (DD1,080,213)
 label_1dd4:     JGE     label_1dda             ; 1DD4 1 080 213 CD04
-                MOVB    off(001f3h), #00ah     ; 1DD6 1 080 213 C4F3980A
+                MOVB    off(001f3h), #00ah     ; Set 1f3h to #00ah
                                                ; 1DDA from 1DD4 (DD1,080,213)
 label_1dda:     LB      A, off(001f3h)         ; 1DDA 0 080 213 F4F3
                 JEQ     label_1dfd             ; 1DDC 0 080 213 C91F
@@ -6138,7 +6140,7 @@ label_1df4:     MOV     X1, #03a0ch            ; 1DF4 1 080 213 600C3A
                                                ; 1DFD from 1DDE (DD0,080,213)
                                                ; 1DFD from 1DE9 (DD0,080,213)
                                                ; 1DFD from 1DF7 (DD1,080,213)
-label_1dfd:     MOV     er0, #00100h           ; 1DFD 1 080 213 44980001
+label_1dfd:     MOV     er0, #00100h           ; Set er0 to #100h
                                                ; 1E01 from 1DF2 (DD0,080,213)
 label_1e01:     L       A, 0c2h                ; 1E01 1 080 213 E5C2
                 CMP     A, er0                 ; 1E03 1 080 213 48
@@ -6762,10 +6764,10 @@ label_20fb:     SB      PSWH.0                 ;
                 RB      off(0121h).2            ; 2114 1 080 220 C4210A
                 MOVB    TCON1, #08eh           ; 2117 1 080 220 C541988E
                 MOV     TM1, #00001h           ; 211B 1 080 220 B534980100
-                MOVB    TCON2, #08fh           ; 2120 1 080 220 C542988F
-                MOV     TM2, #00002h           ; 2124 1 080 220 B538980200
+                MOVB    TCON2, #08fh           ; T2Con = 10001111
+                MOV     TM2, #00002h           ; TM2 = 00000010
                 SC                             ; 2129 1 080 220 85
-                MB      TCON1.4, C             ; 212A 1 080 220 C5413C
+                MB      TCON1.4, C             ; Start Timer1
                 L       A, ACC                 ; 212D 1 080 220 E506
                 MB      TCON2.4, C             ; 212F 1 080 220 C5423C
                 CAL     label_30e2             ; 2132 1 080 220 32E230
@@ -6779,7 +6781,7 @@ label_2137:     JBS     off(0121h).2, label_2150 ; 2137 0 080 220 EA2116
                 MOV     0ceh, #00010h          ; 2141 1 080 220 B5CE981000
                 SB      off(0121h).2            ; 2146 1 080 220 C4211A
                 MOVB    TCON1, #0beh           ; 2149 1 080 220 C54198BE
-                RB      TCON2.2                ; 214D 1 080 220 C5420A
+                RB      TCON2.2                ; Timer2 outputbit = 0
                                                ; 2150 from 2105 (DD0,080,220)
                                                ; 2150 from 2135 (DD1,080,220)
                                                ; 2150 from 2137 (DD0,080,220)
@@ -6794,10 +6796,10 @@ label_2150:     SB      PSWH.0                 ; 2150 1 080 220 A218
                                                ; 2156 from 1902 (DD0,080,213)
 label_2156:     AND     IE, #00080h            ; 2156 0 080 213 B51AD08000
                 RB      PSWH.0                 ; 215B 0 080 213 A208
-                MOV     er0, TM0               ; 215D 0 080 213 B53048
-                MOV     er1, TM1               ; 2160 0 080 213 B53449
-                MOV     er2, TM2               ; 2163 0 080 213 B5384A
-                MOV     er3, TM3               ; 2166 0 080 213 B53C4B
+                MOV     er0, TM0               ; TM0 = ero
+                MOV     er1, TM1               ; TM1 = er1
+                MOV     er2, TM2               ; TM2 = er2
+                MOV     er3, TM3               ; TM3 = er3
                 SB      PSWH.0                 ; 2169 0 080 213 A218
                 NOP                            ; 216B 0 080 213 00
                 RB      PSWH.0                 ; 216C 0 080 213 A208
@@ -6805,7 +6807,7 @@ label_2156:     AND     IE, #00080h            ; 2156 0 080 213 B51AD08000
                 MOV     X2, TM1                ; 2171 0 080 213 B53479
                 MOV     DP, TM2                ; 2174 0 080 213 B5387A
                 MOV     USP, TM3               ; 2177 0 080 213 B53C7B
-                MB      C, TCON0.4             ; 217A 0 080 213 C5402C
+                MB      C, TCON0.4             ; Start Timer1
                 SB      PSWH.0                 ; 217D 0 080 213 A218
                 L       A, 0cch                ; 217F 1 080 213 E5CC
                 ST      A, IE                  ; 2181 1 080 213 D51A
@@ -6943,7 +6945,7 @@ label_223b:     MB      off(P4).3, C           ; mechanical map sensor code
 
 ;********************************************
 ;118h.6
-                CMPB    09ah, #054h            ; 223E 0 080 213 C59AC054
+                CMPB    09ah, #054h            ; Compare battery with
                 MB      off(00118h).6, C          ; 118.6
 
 ;********************************************
@@ -10393,7 +10395,7 @@ label_320c:     VCAL    0                      ; 320C 0 080 0A3 10
                 STB     A, off(00097h)         ; 320D 0 080 0A3 D497
                 LB      A, #080h               ; 320F 0 080 0A3 7780
                 CMPB    A, ADCR1H              ; 3211 0 080 0A3 C563C2
-                MB      off(P2SF).5, C         ; 3214 0 080 0A3 C4263D
+                MB      off(P2SF).5, C         ; C=1 if #080h < ADCR1H (de-mister is on?)
                 RT                             ; 3217 0 080 0A3 01
                                                ; 3218 from 1F29 (DD1,080,213)
 label_3218:     CMP     A, er3                 ; 3218 1 080 213 4B
@@ -10421,7 +10423,7 @@ label_322c:     CLR     off(0008ch)            ; 322C 1 080 213 B48C15
 
                                                ; 3256 from 0770 (DD0,108,20E)
 label_3256:     MOV     X1, #038e3h            ; 3256 0 108 20E 60E338
-                JBR     off(00129h).0, label_325f ; 3259 0 108 20E D82903
+                JBR     off(00129h).0, label_325f ; Jump if not AUTO
                 MOV     X1, #03232h            ; 325C 0 108 20E 603232
                                                ; 325F from 3259 (DD0,108,20E)
 label_325f:     RT                             ; 325F 0 108 20E 01
@@ -10429,7 +10431,7 @@ label_325f:     RT                             ; 325F 0 108 20E 01
 
                                                ; 3260 from 0779 (DD0,108,20E)
 label_3260:     MOV     X1, #038f3h            ; 3260 0 108 20E 60F338
-                JBR     off(00129h).0, label_3269 ; 3263 0 108 20E D82903
+                JBR     off(00129h).0, label_3269 ; Jump if not AUTO
                 MOV     X1, #03242h            ; 3266 0 108 20E 604232
                                                ; 3269 from 3263 (DD0,108,20E)
 label_3269:     RT                             ; 3269 0 108 20E 01
@@ -10438,7 +10440,7 @@ label_3269:     RT                             ; 3269 0 108 20E 01
 
                                                ; 326A from 07A7 (DD0,108,20E)
 label_326a:     MOV     DP, #03903h            ; 326A 0 108 20E 620339
-                JBR     off(00129h).0, label_3273 ; 326D 0 108 20E D82903
+                JBR     off(00129h).0, label_3273 ; Jump if not AUTO
                 MOV     DP, #03252h            ; 3270 0 108 20E 625232
                                                ; 3273 from 326D (DD0,108,20E)
 label_3273:     RT                             ; 3273 0 108 20E 01
@@ -10456,7 +10458,7 @@ label_327e:     SB      0feh.4                 ; 327E 1 108 13D C5FE1C
                 DB  024h,003h,003h,0A6h,01Dh,003h,0BDh,01Dh ; 328F
                                                ; 3297 from 29EC (DD1,080,132)
 label_3297:     MB      C, 0ffh.6              ; AC switch
-                JLT     label_329f             ; 329A 1 080 132 CA03
+                JLT     label_329f             ; Jump if (AC is OFF)
                 JBR     off(P3SF).3, label_32a1 ; 329C 1 080 132 DB2A02
                                                ; 329F from 329A (DD1,080,132)
 label_329f:     CLR     er2                    ; 329F 1 080 132 4615
@@ -10491,7 +10493,7 @@ label_32d8:     J       label_0c29             ; 32D8 0 108 13D 03290C
                                                ; 32DB from 1D99 (DD0,080,213)
 label_32db:     MB      off(00027h).5, C       ; 32DB 1 080 213 C4273D
                 MB      C, 0ffh.6              ; AC switch
-                MB      off(00027h).7, C       ; 32E1 1 080 213 C4273F
+                MB      off(00027h).7, C       ; Move AC Switch on/off into 027h.7
                 RT                             ; 32E4 1 080 213 01
                                                ; 32E5 from 301B (DD1,080,213)
 label_32e5:     L       A, #08000h             ; 32E5 1 080 213 670080
