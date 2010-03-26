@@ -14,7 +14,7 @@
 ;B15 - ignitor  TCON2.2
 ;B17 - ignitor  TCON2.2
 
-;    - CEL dash light P0.6
+;B6  - CEL dash light P0.6
 ;    - CEL LED P1.2
 
 ;INPUTS:
@@ -23,6 +23,8 @@
 ;B20 - Timing Adjust Connector
 ;
 ;C10 - Brake Switch
+;
+;
 ;ram inputs; Ecu uses all of them
 ;FFh.0 = Knock sensor??? Auto Trans lockup input?
 ;FFh.1 =
